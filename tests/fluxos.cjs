@@ -1,0 +1,33 @@
+const vm=require('node:vm');
+const fs=require('node:fs');
+const assert=require('node:assert/strict');
+const source=fs.readFileSync(require('node:path').join(__dirname,'..','app.js'),'utf8');
+function context(initial){
+  const elements=new Map(),storage=new Map(initial?[['ajudanois-v1',JSON.stringify(initial)]]:[]);
+  const element=()=>({innerHTML:'',textContent:'',value:'',style:{},open:false,showModal(){this.open=true},close(){this.open=false},addEventListener(){},focus(){},getBoundingClientRect(){return {left:0,right:100,top:0,bottom:100}}});
+  const c=vm.createContext({assert,console,structuredClone,Date,Math,TextEncoder,TextDecoder,Uint8Array,Blob,URL,atob,btoa,setTimeout:()=>1,clearTimeout(){},location:{hash:''},window:{addEventListener(){},scrollTo(){}},document:{querySelector(s){if(!elements.has(s))elements.set(s,element());return elements.get(s)},querySelectorAll(){return []},body:{classList:{remove(){}}}},localStorage:{getItem:k=>storage.get(k)||null,setItem(k,v){if(c.failWrites)throw Error('Quota');storage.set(k,v)}},failWrites:false});
+  vm.runInContext(source,c);return c;
+}
+const c=context();let count=0;
+function check(name,code){vm.runInContext('{'+code+'}',c);count++;console.log('PASS',name);}
+vm.runInContext(`function form(values){const elements=Object.fromEntries(Object.entries(values).map(([k,value])=>[k,{value,focus(){}}]));elements.namedItem=k=>elements[k];return {elements};}`,c);
+check('Todas as telas acessíveis nos quatro perfis',`for(const role of Object.keys(permissions)){state.role=role;for(const route of [...permissions[role],'guia']){page=route;render();assert.ok($('#main').innerHTML.includes('<h1>'),role+' '+route)}}`);
+check('Entrega fora da sessão não cria presença',`state.role='Aluno';materialRoom='alg';submitResponse(form({response:'Resposta extrassessão válida.'}),1);assert.equal(state.attendance.filter(x=>x.lessonId===1).length,0);`);
+check('Interação e revisão registram apenas uma presença',`state.role='Monitor';startLesson(1);state.role='Aluno';submitResponse(form({response:'Revisão durante a sessão aberta.'}),1);submitResponse(form({response:'Segunda revisão durante a sessão.'}),1);assert.equal(state.attendance.filter(x=>x.lessonId===1&&x.present).length,1);`);
+check('Filtro mantém a atividade ao filtrar situação',`state.role='Monitor';page='acompanhamento';trackingActivity(2);trackingFilter='Corrigida';render();assert.equal(selectedId,2);assert.ok(tracking().includes('Lista 02 · Condicionais'));assert.ok(trackingTable([{name:'Ana Souza',...deliveryFor(state.activities[1],'Ana Souza')}]).includes('Corrigida'));`);
+check('Correção com nota zero aparece e bloqueia edição',`selectedId=1;saveCorrection(form({grade:'0',feedback:'Detalhe o algoritmo.'}),'Ana Souza');assert.equal(activityStatus(state.activities[0]),'Corrigida');state.role='Aluno';submitResponse(form({response:'Tentativa após correção'}),1);assert.notEqual(state.activities[0].response,'Tentativa após correção');`);
+check('Sessão soma horas uma vez e registra ausência sem interação',`state.role='Monitor';endLesson(1);runPending();assert.equal(totalHours('alg'),42);endLesson(1);assert.equal(totalHours('alg'),42);startLesson(2);endLesson(2);runPending();assert.equal(totalHours('alg'),44);assert.equal(state.attendance.find(p=>p.lessonId===2).present,false);`);
+check('Emissão guarda assinatura e horas, bloqueia duplicata',`state.role='Coordenação';page='emissao';issueCertificate();const beforeCount=state.certificates.length;issueCertificate();assert.equal(state.certificates.length,beforeCount);assert.equal(state.certificates.at(-1).hours,44);state.signature.name='Nova assinatura';assert.equal(state.certificates.at(-1).signer,'Marina Oliveira');`);
+check('Reemissão cancela versão anterior e mantém apenas uma ativa',`const old=state.certificates.at(-1);reissue(old.id);runPending();assert.equal(old.status,'Cancelado');assert.equal(state.certificates.at(-1).signer,'Nova assinatura');assert.equal(state.certificates.filter(c=>c.term==='2026.2'&&c.status==='Disponível').length,1);`);
+check('Cancelamento preserva histórico e assinatura ausente bloqueia emissão',`const cert=state.certificates.at(-1);cancelCertificate(cert.id);runPending();assert.equal(cert.status,'Cancelado');assert.ok(cert.events.some(e=>e.action==='Cancelamento'));state.signature=null;const n=state.certificates.length;issueCertificate();assert.equal(state.certificates.length,n);`);
+check('Mensagem aguarda leitura, fica lida e edição exige nova leitura',`state.role='Monitor';page='conversas';sendMessage(form({message:'Mensagem de teste'}));const msg=state.messages.at(-1);assert.deepEqual(Array.from(msg.readBy),['Monitor']);state.role='Professor';chat();assert.ok(msg.readBy.includes('Professor'));state.role='Monitor';updateMessage(form({text:'Mensagem editada'}),msg.id);assert.deepEqual(Array.from(msg.readBy),['Monitor']);`);
+check('Aviso individual alheio não aparece para Ana',`state.role='Monitor';saveNotice(form({target:'Bruno Lima',title:'Aviso exclusivo',body:'Mensagem particular para Bruno.'}),0);state.role='Aluno';page='avisos';assert.ok(!notices().includes('Aviso exclusivo'));`);
+check('Processo inválido não salva e atualização mantém ID',`state.role='Coordenação';const n=state.selections.length;saveSelection(form({title:'Teste',discipline:'Algoritmos',start:'2026-11-20',end:'2026-11-01',slots:'2',desc:'Teste'}),0);assert.equal(state.selections.length,n);saveSelection(form({title:'Título atualizado',discipline:'Algoritmos',start:'2026-11-01',end:'2026-11-20',slots:'2',desc:'Teste'}),1);assert.equal(state.selections[0].id,1);assert.equal(state.selections[0].title,'Título atualizado');`);
+check('Falha de armazenamento desfaz a alteração',`failWrites=true;const n=state.selections.length;assert.equal(commitMutation(()=>state.selections=[]),false);assert.equal(state.selections.length,n);failWrites=false;`);
+const preserved=vm.runInContext('structuredClone(state)',c);preserved.customRooms.push({key:'s777',code:'AN777',title:'Sala preservada',desc:'Descrição'});preserved.activities[0].response='Conteúdo anterior preservado';delete preserved.monitorRecords;delete preserved.deliveries;
+const migrated=context(preserved);
+vm.runInContext(`assert.equal(state.activities[0].response,'Conteúdo anterior preservado');assert.equal(state.customRooms[0].title,'Sala preservada');assert.ok(state.monitorRecords.length);`,migrated);count++;console.log('PASS Migração preserva alterações anteriores');
+check('Restaurar reinicializa estado e filtros',`resetDemo();runPending();assert.equal(totalHours('alg'),40);assert.equal(state.activities[0].response,'');assert.equal(selectedId,null);assert.equal(activityLesson,null);`);
+console.log(count+' verificações passaram.');
+
+
