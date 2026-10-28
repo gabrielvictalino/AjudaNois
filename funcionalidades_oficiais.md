@@ -532,3 +532,96 @@ As mensagens aparecem em ordem cronológica, da mais antiga para a mais nova, e 
 - menções com @;
 - reações (curtir);
 - conversas em grupo além do chat geral da sala.
+
+---
+
+## F09 - Certificados de monitoria
+Ao fim de cada semestre, o sistema gera automaticamente um certificado para cada monitoria concluída. O professor da matéria ou a coordenação dá o aval, e o certificado sai com a assinatura cadastrada e as horas complementares definidas pela coordenação. O monitor acompanha, visualiza e baixa os próprios certificados, e qualquer pessoa pode verificar a autenticidade pelo código público.
+
+Esta funcionalidade reúne o cadastro da assinatura, a configuração de horas, a emissão e o gerenciamento dos certificados pelo monitor.
+
+**Complexidade:** Difícil.
+
+### Configuração de horas (coordenação)
+| Campo | Exemplo | Significado |
+|---|---|---|
+| Horas por monitoria | 10 | toda monitoria aprovada vale esse número de horas complementares no certificado |
+| Monitorias que rendem horas | 2 | o aluno pode fazer quantas monitorias quiser, mas só as primeiras, até esse limite, rendem horas |
+
+Exemplo: com 10 horas e limite 2, um aluno que faz três monitorias ganha 10 horas na primeira, 10 horas na segunda e recebe o certificado da terceira sem horas.
+
+### Ciclo de vida do certificado
+| Situação | Quando |
+|---|---|
+| Aguardando aval | gerado automaticamente no fim do semestre |
+| Disponível | aprovado pelo professor ou pela coordenação |
+| Recusado | recusado com justificativa; pode ser reaberto para nova análise |
+| Cancelado | cancelado pela coordenação ou substituído por uma reemissão |
+
+### Campos do certificado
+| Campo | Exemplo |
+|---|---|
+| Código público | AN-2027-004 |
+| Monitor | Lucas Costa |
+| Matéria | 00008 · Algoritmos e estrutura de dados |
+| Semestre | 2026.2 |
+| Salas em que atuou | Algoritmos · Turma A |
+| Horas complementares | 10 horas, ou "sem horas complementares" |
+| Data de emissão | 05/01/2027 |
+| Cópia da assinatura | Marina Oliveira · Coordenadora de monitorias |
+| Aprovado por | Helena |
+| Versão | 1 |
+| Histórico | geração, aprovação, recusa, reabertura, reemissão e cancelamento, com data e responsável |
+
+### Regras de negócio
+
+#### RN001 - Assinatura
+Existe uma única assinatura dos certificados no sistema, cadastrada pela coordenação, com nome, cargo e uma imagem opcional em PNG ou JPG de até 500 KB. A coordenação vê uma prévia de como a assinatura aparece no certificado. Sem imagem, o certificado mostra o nome escrito.
+
+#### RN002 - Alteração e exclusão da assinatura
+A coordenação pode alterar a assinatura, remover só a imagem ou excluí-la. Sem assinatura cadastrada, nenhum certificado pode ser aprovado nem reemitido. Os certificados já emitidos guardam uma cópia da assinatura usada e não mudam quando ela é alterada ou excluída.
+
+#### RN003 - Configuração de horas
+Somente a coordenação define as horas por monitoria e o número de monitorias que rendem horas, ambos números inteiros maiores que zero, e pode alterá-los a qualquer momento. Ninguém digita horas manualmente num certificado.
+
+#### RN004 - Horas do certificado
+Ao ser aprovado, o certificado copia as horas por monitoria vigentes naquele momento. Alterar a configuração depois não muda os certificados já emitidos.
+
+#### RN005 - Limite de monitorias com horas
+O limite vale para todo o curso do aluno. As horas são dadas às primeiras monitorias do aluno, pela ordem de aprovação dos certificados, até o limite. As monitorias além do limite também recebem certificado, com a indicação "Sem horas complementares: limite de monitorias atingido".
+
+#### RN006 - Geração automática
+No último dia do semestre (31 de julho ou 31 de dezembro), o sistema gera um certificado "Aguardando aval" para cada monitoria do semestre, ou seja, para cada aluno aprovado num processo seletivo (F02) daquele semestre, com a matéria e as salas em que ele atuou.
+
+#### RN007 - Quem dá o aval
+A coordenação aprova ou recusa qualquer certificado. O professor aprova ou recusa os certificados das matérias que leciona. Antes de decidir, a pessoa vê quantas horas o certificado vai receber e quantas monitorias com horas o aluno já usou.
+
+#### RN008 - Aprovação
+Ao ser aprovado, o certificado passa para "Disponível" e recebe o código público, a data de emissão, as horas (RN004 e RN005), a cópia da assinatura atual e o nome de quem aprovou. Uma observação é opcional.
+
+#### RN009 - Recusa e reabertura
+Para recusar um certificado, a justificativa é obrigatória. O monitor vê a justificativa. O professor ou a coordenação pode reabrir um certificado recusado, que volta para "Aguardando aval".
+
+#### RN010 - Um certificado ativo por vez
+Existe no máximo um certificado "Aguardando aval" ou "Disponível" para cada monitor, matéria e semestre.
+
+#### RN011 - Reemissão
+A coordenação pode reemitir um certificado disponível. A versão atual é cancelada, e uma nova versão é emitida com novo código, a assinatura atual e as horas da configuração atual. A reemissão continua ocupando a mesma vaga no limite de monitorias com horas.
+
+#### RN012 - Cancelamento
+A coordenação pode cancelar um certificado disponível sem reemitir. A versão cancelada continua no histórico, mas o download fica bloqueado, e a vaga no limite de monitorias com horas do aluno é liberada.
+
+#### RN013 - Visão do monitor
+O monitor vê os próprios certificados com a situação de cada um. Enquanto o certificado está "Aguardando aval", ele vê que está em análise, sem download. Quando está "Disponível", ele visualiza e baixa o PDF. Quando está "Recusado", ele vê a justificativa. O monitor também vê quantas monitorias com horas já usou (por exemplo, "1 de 2") e o total de horas obtidas.
+
+#### RN014 - PDF do certificado
+O certificado é um PDF de uma página em paisagem, com o nome do monitor, a matéria, o semestre, as salas, as horas complementares (ou a indicação de que não há horas), a data de emissão, a versão, a assinatura e o código público.
+
+#### RN015 - Verificação pública
+Qualquer pessoa, sem login, digita o código do certificado e vê se ele é válido, cancelado ou inexistente. Para um certificado válido, aparecem o nome do monitor, a matéria, o semestre, as horas e a data de emissão.
+
+#### RN016 - Histórico
+Cada certificado guarda o histórico de geração, aprovação, recusa, reabertura, reemissão e cancelamento, com a data e o responsável. O histórico é visível para o professor da matéria e para a coordenação.
+
+#### RN017 - Notificações
+O monitor é notificado quando o certificado é aprovado, recusado, reemitido ou cancelado.
