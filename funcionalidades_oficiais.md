@@ -672,7 +672,7 @@ Ao autorizar um e-mail, o sistema envia um convite com o link de primeiro acesso
 A pessoa entra com o e-mail autorizado e a senha. No primeiro acesso, ela cria a senha pelo link do convite. A senha tem no mínimo 8 caracteres. A opção "esqueci minha senha" envia um link de redefinição para o e-mail, quando ele tem acesso.
 
 #### RN005 - Primeiro acesso
-No primeiro acesso, a pessoa informa o nome e cria a senha. O aluno também informa a matrícula, que só tem números, é única no sistema e é usada para conferir o histórico acadêmico (F04, RN003).
+No primeiro acesso, a pessoa informa o nome, cria a senha e aceita receber notificações por e-mail, o que é obrigatório para criar a conta (EX01). O aluno também informa a matrícula, que só tem números, é única no sistema e é usada para conferir o histórico acadêmico (F04, RN003).
 
 #### RN006 - Alterar papel
 O coordenador pode mudar o papel de qualquer usuário a qualquer momento, e a mudança vale a partir do próximo acesso da pessoa. Ao tornar alguém professor, o coordenador informa pelo menos uma matéria ativa que ele leciona (F11). Um professor não pode virar aluno enquanto for o único professor de alguma sala ativa (F05, RN004).
@@ -746,3 +746,36 @@ Uma matéria que nunca foi usada, ou seja, sem salas, professores e processos se
 
 #### RN010 - Busca e filtros
 As matérias podem ser buscadas por código ou nome dentro de cada aba.
+
+---
+
+# Extras
+Itens de apoio que não são funcionalidades próprias, mas complementam as funcionalidades acima.
+
+## EX01 - Notificações por e-mail
+As notificações do sistema são enviadas por e-mail para todos os usuários. Aceitar recebê-las é obrigatório para criar a conta. Não existe uma central de notificações dentro da plataforma.
+
+### Regras
+
+#### R001 - Aceite obrigatório no primeiro acesso
+No primeiro acesso (F10, RN005), a pessoa precisa marcar a opção "Aceito receber notificações por e-mail" para criar a conta. Sem o aceite, a conta não é criada.
+
+#### R002 - Aceite permanente
+O aceite não pode ser desmarcado depois. Todos os usuários ativos recebem as notificações por e-mail enquanto tiverem acesso ao sistema.
+
+#### R003 - Quando o e-mail é enviado
+O usuário recebe um e-mail sempre que uma funcionalidade diz que a pessoa é notificada:
+
+| Funcionalidade | Evento |
+|---|---|
+| F02 | processo seletivo cancelado e resultado do processo |
+| F06 | nota revisada pelo professor ou monitor |
+| F07 | comunicado publicado para a pessoa |
+| F08 | nova mensagem individual e resposta a uma mensagem da pessoa |
+| F09 | certificado aprovado, recusado, reemitido ou cancelado |
+
+#### R004 - Conteúdo do e-mail
+O e-mail informa o que aconteceu e traz um link que leva direto ao item no sistema, como a postagem, a conversa ou o certificado.
+
+#### R005 - Outros e-mails do sistema
+O convite de acesso e a redefinição de senha (F10) e o convite para entrar numa sala (F05) também são enviados por e-mail. Os convites de acesso são enviados antes do aceite, porque é por eles que a pessoa chega ao primeiro acesso.
