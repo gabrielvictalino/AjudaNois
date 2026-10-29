@@ -76,7 +76,7 @@ Depende do cadastro de salas do Classroom (F05).
 ### Regras de negócio
 
 #### RN001 - Permissão de gerenciamento
-Somente professores e coordenadores criam, alteram, cancelam e excluem processos seletivos. O coordenador gerencia qualquer processo. O professor gerencia apenas os processos das matérias que leciona.
+Somente professores e coordenadores criam, alteram, cancelam e excluem processos seletivos. O coordenador gerencia qualquer processo. O professor gerencia apenas os processos das matérias que leciona de forma ativa (F10). A matéria de um novo processo é escolhida entre as matérias ativas cadastradas na F11: uma matéria arquivada não aceita novos processos seletivos.
 
 #### RN002 - Datas e vagas
 A data de fim das inscrições não pode ser anterior à data de início. A quantidade de vagas deve ser um número inteiro maior que zero.
@@ -244,7 +244,7 @@ Somente professores e coordenadores criam salas. O coordenador edita e arquiva q
 O nome é obrigatório, tem no máximo 60 caracteres e não precisa ser único: duas salas podem ter o mesmo nome.
 
 #### RN003 - Matéria
-Toda sala pertence a uma matéria, identificada pelo código (ex.: 00008). O professor só cria salas das matérias que leciona, e o coordenador, de qualquer matéria. A matéria não pode mais ser alterada depois que a sala tiver monitores alocados ou estiver vinculada a um processo seletivo.
+Toda sala pertence a uma matéria, identificada pelo código (ex.: 00008) e escolhida entre as matérias ativas cadastradas na F11. O professor só cria salas das matérias que leciona de forma ativa (F10), e o coordenador, de qualquer matéria ativa. Se a matéria for arquivada depois, a sala continua ligada a ela e funcionando (F11, RN006). A matéria não pode mais ser alterada depois que a sala tiver monitores alocados ou estiver vinculada a um processo seletivo.
 
 #### RN004 - Professores da sala
 Quem cria a sala entra nela automaticamente como professor. Outros professores, de qualquer matéria, podem ser adicionados ou removidos depois, mas a sala sempre precisa ter pelo menos um professor.
@@ -404,7 +404,7 @@ Coordenadores, professores e monitores publicam postagens no mural da sala. Ao p
 ### Campos por tipo
 | Tipo | Obrigatórios | Opcionais | Como aparece no mural |
 |---|---|---|---|
-| Aula | título, data, horário de início, duração, link externo (Google Meet ou similar) | conteúdo | data, horário, duração e botão "Entrar na aula" |
+| Aula | título, data, horário de início, link externo (Google Meet ou similar) | conteúdo | data, horário e botão "Entrar na aula" |
 | Atividade | título, prazo, questões, pontos, gabarito e regras de atraso (F06) | instruções | prazo, número de questões, total de pontos e regra de atraso |
 | Comunicado | título, mensagem, destinatários (sala toda ou alunos específicos) | urgente, fixar no topo | destinatários, marca de urgente e leituras |
 | Material didático | título, unidade ou assunto, arquivo ou link (pelo menos um) | descrição | unidade, arquivo para baixar e link |
@@ -423,7 +423,7 @@ Toda postagem tem exatamente um tipo, escolhido entre os tipos ativos (F01). O t
 A postagem só é publicada quando todos os campos obrigatórios do seu tipo estão preenchidos. O título tem no máximo 120 caracteres. Se faltar algum campo, o sistema informa quais.
 
 #### RN004 - Aula
-A aula exige data, horário de início, duração maior que zero e um link externo válido (http ou https). A aula acontece fora do sistema: só o link é guardado, e o chat ou a gravação do serviço externo não são trazidos para a aplicação.
+A aula exige data, horário de início e um link externo válido (http ou https). A aula acontece fora do sistema: só o link é guardado, e o chat ou a gravação do serviço externo não são trazidos para a aplicação.
 
 #### RN005 - Atividade
 A atividade segue as regras da F06. Ela é publicada no mural com o prazo, o número de questões, o total de pontos e a regra de atraso visíveis para os alunos.
@@ -625,3 +625,124 @@ Cada certificado guarda o histórico de geração, aprovação, recusa, reabertu
 
 #### RN017 - Notificações
 O monitor é notificado quando o certificado é aprovado, recusado, reemitido ou cancelado.
+
+---
+
+## F10 - Gerenciamento de usuários
+Só entra na plataforma quem tem o e-mail autorizado pela coordenação. O coordenador cadastra os e-mails permitidos, define o papel de cada um (aluno, professor ou coordenador) e o sistema envia um convite. A pessoa entra com o e-mail autorizado e uma senha criada por ela. O coordenador também altera papéis e remove usuários.
+
+**Complexidade:** Difícil.
+
+### Papéis
+| Papel | O que pode fazer |
+|---|---|
+| Aluno | entrar em salas, responder atividades e se inscrever em processos seletivos. Torna-se monitor quando é aprovado num processo seletivo (F02); monitor não é um papel escolhido nesta funcionalidade |
+| Professor | criar salas, publicar postagens, gerenciar processos seletivos e dar aval em certificados das matérias que leciona |
+| Coordenador | tudo o que o professor faz, em todas as matérias, além de gerenciar usuários, matérias, tipos de postagem, assinatura e horas dos certificados |
+
+### Situação do usuário
+| Situação | Quando |
+|---|---|
+| Convite pendente | o e-mail foi autorizado, mas a pessoa ainda não entrou |
+| Ativo | a pessoa já entrou pelo menos uma vez |
+| Removido | o coordenador removeu o acesso |
+
+### Campos do usuário
+| Campo | Obrigatório | Quem preenche | Exemplo |
+|---|---|---|---|
+| E-mail | sim | coordenador | ana@aluno.edu |
+| Papel | sim | coordenador | Aluno |
+| Matérias que leciona | sim, para professor | coordenador | 00008 · Algoritmos e estrutura de dados |
+| Nome | sim | a própria pessoa, no primeiro acesso | Ana Souza |
+| Matrícula | sim, para aluno | o aluno, no primeiro acesso | 2024100011 |
+| Senha | sim | a própria pessoa, no primeiro acesso | — |
+
+### Regras de negócio
+
+#### RN001 - Acesso só por e-mail autorizado
+Só entra na plataforma quem tem o e-mail na lista de e-mails autorizados e não foi removido. Qualquer outra tentativa de login é recusada com a mensagem "Seu e-mail não tem acesso. Fale com a coordenação."
+
+#### RN002 - Autorizar e-mails
+Somente o coordenador autoriza e-mails. Ele pode informar vários e-mails de uma vez, separados por vírgula ou um por linha, todos com o mesmo papel. Cada e-mail precisa ser válido e não pode já estar autorizado. O sistema informa quais e-mails foram aceitos e quais foram recusados, com o motivo.
+
+#### RN003 - Convite
+Ao autorizar um e-mail, o sistema envia um convite com o link de primeiro acesso. O link vale por 7 dias. Enquanto o convite estiver pendente, o coordenador pode reenviá-lo, o que gera um novo prazo de 7 dias, ou cancelá-lo, o que retira o e-mail da lista de autorizados.
+
+#### RN004 - Login
+A pessoa entra com o e-mail autorizado e a senha. No primeiro acesso, ela cria a senha pelo link do convite. A senha tem no mínimo 8 caracteres. A opção "esqueci minha senha" envia um link de redefinição para o e-mail, quando ele tem acesso.
+
+#### RN005 - Primeiro acesso
+No primeiro acesso, a pessoa informa o nome e cria a senha. O aluno também informa a matrícula, que só tem números, é única no sistema e é usada para conferir o histórico acadêmico (F04, RN003).
+
+#### RN006 - Alterar papel
+O coordenador pode mudar o papel de qualquer usuário a qualquer momento, e a mudança vale a partir do próximo acesso da pessoa. Ao tornar alguém professor, o coordenador informa pelo menos uma matéria ativa que ele leciona (F11). Um professor não pode virar aluno enquanto for o único professor de alguma sala ativa (F05, RN004).
+
+#### RN007 - Remover usuário
+O coordenador remove o acesso de um usuário, com confirmação. A pessoa não consegue mais entrar e sai de todas as salas. Todo o histórico dela é mantido: mensagens, entregas, notas, inscrições, certificados, postagens e atividades continuam no sistema com o nome dela. Se o mesmo e-mail for autorizado de novo, a pessoa recupera esse histórico.
+
+#### RN008 - Sempre um coordenador
+O sistema precisa ter sempre pelo menos um coordenador ativo. O último coordenador ativo não pode ser removido nem ter o papel alterado. Nenhum coordenador remove a si mesmo nem altera o próprio papel.
+
+#### RN009 - Primeiro coordenador
+Ao criar o site, o sistema cadastra automaticamente o e-mail vagnermontenegro20@gmail.com como primeiro coordenador, sem convite. Ele cria a senha pela opção "esqueci minha senha". A partir dele, os demais usuários são cadastrados pela tela.
+
+#### RN010 - Busca e filtros
+A lista de usuários pode ser buscada por nome, e-mail ou matrícula e filtrada por papel e por situação.
+
+#### RN011 - Histórico de alterações
+Cada usuário tem um histórico de alterações: autorização, mudanças de papel e de matérias, remoção e nova autorização, com a data e o responsável.
+
+---
+
+## F11 - Gerenciamento de matérias
+A coordenação cadastra as matérias usadas em todo o sistema: nas salas (F05), nos processos seletivos (F02), no histórico acadêmico (F04) e nas matérias que cada professor leciona (F10). Uma matéria que não é mais oferecida pode ser arquivada: as salas que já existem continuam ligadas a ela e funcionando, mas não é possível criar novas salas nem novos processos seletivos com ela.
+
+**Complexidade:** Média.
+
+### Campos da matéria
+| Campo | Obrigatório | Exemplo |
+|---|---|---|
+| Código | sim | 00008 |
+| Nome | sim | Algoritmos e estrutura de dados |
+| Descrição | não | Disciplina do 3º período |
+| Situação | definido pelo sistema | Ativa ou Arquivada |
+
+### Abas
+| Aba | O que mostra |
+|---|---|
+| Ativas | matérias que podem ser usadas em novas salas e novos processos seletivos |
+| Arquivadas | matérias que não aceitam novas salas nem novos processos seletivos |
+
+Cada matéria mostra quantas salas, professores e processos seletivos a usam.
+
+### Regras de negócio
+
+#### RN001 - Permissão
+Somente o coordenador cadastra, edita, arquiva, desarquiva e exclui matérias. Professores e alunos apenas veem as matérias.
+
+#### RN002 - Código
+O código é obrigatório, tem só números e segue o formato do histórico acadêmico (ex.: 00008). Ele é único, contando também as matérias arquivadas. É o código que liga a matéria às disciplinas aprovadas do histórico (F04, RN007).
+
+#### RN003 - Nome
+O nome é obrigatório e tem no máximo 120 caracteres.
+
+#### RN004 - Edição
+O nome e a descrição podem ser alterados a qualquer momento. O código só pode ser alterado enquanto a matéria não estiver em uso por nenhuma sala, processo seletivo ou professor.
+
+#### RN005 - Arquivamento
+O coordenador pode arquivar uma matéria. A matéria arquivada vai para a aba Arquivadas e não pode ser escolhida na criação de novas salas (F05) nem de novos processos seletivos (F02).
+
+#### RN006 - Salas existentes
+Arquivar uma matéria não arquiva nem altera as salas que já a usam. Elas continuam ligadas à matéria e funcionando normalmente.
+
+#### RN007 - Desarquivamento
+O coordenador pode desarquivar a matéria a qualquer momento. Ela volta a poder ser usada em novas salas e processos seletivos e volta a ficar ativa para os professores que a lecionavam.
+
+#### RN008 - Matérias do professor
+Na conta do professor aparecem as salas ativas de que ele participa, com a matéria de cada uma, e as matérias que ele leciona de forma ativa. Quando uma matéria é arquivada, ela deixa de estar ativa para o professor: ele não pode criar salas nem processos seletivos com ela, e ela não pode ser atribuída a professores (F10, RN006). A matéria continua ligada às salas que já existem.
+
+#### RN009 - Exclusão
+Uma matéria que nunca foi usada, ou seja, sem salas, professores e processos seletivos, pode ser excluída. As demais só podem ser arquivadas.
+
+#### RN010 - Busca e filtros
+As matérias podem ser buscadas por código ou nome dentro de cada aba.
