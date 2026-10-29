@@ -5,7 +5,7 @@ O coordenador cadastra os tipos de postagem que professores e monitores podem us
 
 Existem dois grupos de tipos:
 
-- **Tipos do sistema**: Aula, Atividade, Comunicado, Material didático e Extra. Eles já vêm cadastrados. Aula, Atividade, Comunicado e Material didático têm comportamento próprio (a aula gera presença, a atividade recebe entregas, o comunicado controla leituras). O Extra é a postagem genérica, com título, texto e anexos, para o que não se encaixa nos outros tipos.
+- **Tipos do sistema**: Aula, Atividade, Comunicado, Material didático e Extra. Eles já vêm cadastrados. Aula, Atividade, Comunicado e Material didático têm comportamento próprio (a aula pode ter uma chamada de presença ligada, a atividade recebe entregas, o comunicado controla leituras). O Extra é a postagem genérica, com título, texto e anexos, para o que não se encaixa nos outros tipos.
 - **Tipos personalizados**: criados pelo coordenador, como "Evento", "Dica da semana", "Vídeo" ou "Enquete". Funcionam como a postagem Extra, com título, texto e anexos, mas com nome e cor próprios.
 
 **Complexidade:** Média.
@@ -391,8 +391,8 @@ Cada aluno vê apenas a própria entrega, a própria nota, os pontos de cada que
 #### RN014 - Exibição no mural
 A atividade aparece no mural da sala com a etiqueta e a cor do tipo "Atividade" (F01), junto com o prazo e a situação da entrega do aluno.
 
-### Fica para depois
-A atividade durante a aula, que gera presença, depende da funcionalidade de aulas, que ainda não existe. Por enquanto, todas as atividades funcionam como extraclasse.
+### Presença
+Responder uma atividade não registra presença. A presença dos alunos é registrada pela chamada da F12.
 
 ---
 
@@ -404,7 +404,7 @@ Coordenadores, professores e monitores publicam postagens no mural da sala. Ao p
 ### Campos por tipo
 | Tipo | Obrigatórios | Opcionais | Como aparece no mural |
 |---|---|---|---|
-| Aula | título, data, horário de início, link externo (Google Meet ou similar) | conteúdo | data, horário e botão "Entrar na aula" |
+| Aula | título, data, horário de início, link externo (Google Meet ou similar) | conteúdo, chamada ligada (F12) | data, horário, botão "Entrar na aula" e, com chamada aberta, botão "Marcar presença" |
 | Atividade | título, prazo, questões, pontos, gabarito e regras de atraso (F06) | instruções | prazo, número de questões, total de pontos e regra de atraso |
 | Comunicado | título, mensagem, destinatários (sala toda ou alunos específicos) | urgente, fixar no topo | destinatários, marca de urgente e leituras |
 | Material didático | título, unidade ou assunto, arquivo ou link (pelo menos um) | descrição | unidade, arquivo para baixar e link |
@@ -746,6 +746,70 @@ Uma matéria que nunca foi usada, ou seja, sem salas, professores e processos se
 
 #### RN010 - Busca e filtros
 As matérias podem ser buscadas por código ou nome dentro de cada aba.
+
+---
+
+## F12 - Registro de presença
+O monitor, o professor ou o coordenador abre uma chamada na sala, e o sistema gera um link de presença. O link pode ser enviado junto com a postagem da aula ou separadamente, durante a monitoria. O aluno abre o link já logado na própria conta, clica em "Estou presente" e a presença fica registrada. A presença também pode ser marcada ou retirada manualmente. Cada aluno tem um painel com o percentual de presença em cada sala.
+
+A aula continua funcionando como na F07: ela só tem o link externo. A chamada é separada e pode ou não estar ligada a uma aula.
+
+**Complexidade:** Média.
+
+### Campos da chamada
+| Campo | Obrigatório | Exemplo |
+|---|---|---|
+| Título | sim | Monitoria de 12/11 · Laços de repetição |
+| Data | definido pelo sistema (dia em que a chamada é aberta) | 12/11/2026 |
+| Aula ligada | não | Laços de repetição na prática |
+| Encerramento | sim | manual ou tempo limite de 2 horas |
+| Link de presença | gerado pelo sistema | ajudanois.app/presenca/K7P2QX |
+| Situação | definido pelo sistema | Aberta, Encerrada ou Cancelada |
+| Aberta por | definido pelo sistema | Lucas Costa |
+
+### Formas de enviar o link
+| Forma | Como funciona |
+|---|---|
+| Junto com a aula | a chamada é ligada a uma aula da sala (F07), e o botão "Marcar presença" aparece no cartão da aula enquanto a chamada está aberta |
+| Link avulso | quem abriu copia o link e envia onde quiser: no chat da sala (F08), num comunicado ou no chat da chamada de vídeo |
+
+### Regras de negócio
+
+#### RN001 - Quem abre a chamada
+O monitor alocado na sala, o professor da sala e o coordenador podem abrir, encerrar, cancelar e editar chamadas. Só é possível abrir chamadas em salas ativas (F05).
+
+#### RN002 - Uma chamada por dia
+Cada sala pode ter no máximo uma chamada por dia. Uma chamada cancelada não conta, e outra pode ser aberta no mesmo dia.
+
+#### RN003 - Link de presença
+Cada chamada tem um link único, gerado ao abrir a chamada. A chamada pode ser ligada a uma aula da sala, mostrando o botão "Marcar presença" no cartão da aula, ou ser avulsa, apenas com o link para copiar e enviar.
+
+#### RN004 - Presença ligada à conta
+Ao abrir o link, a pessoa precisa estar logada. Se não estiver, ela faz o login (F10) e volta para a página da chamada. A página mostra a sala, o título e a data, e o botão "Estou presente". A presença registrada é sempre a da própria conta: ninguém marca presença por outra pessoa pelo link.
+
+#### RN005 - Quem marca presença pelo link
+Somente alunos ativos da sala marcam presença pelo link. Quem não participa da sala vê a mensagem "Você não faz parte desta sala". Cada aluno marca presença uma única vez por chamada, e o sistema guarda a data e a hora.
+
+#### RN006 - Encerramento
+Ao abrir a chamada, escolhe-se entre encerramento manual, em que alguém encerra a chamada quando quiser, e tempo limite, de 1 a 24 horas. Em qualquer caso, a chamada nunca fica aberta por mais de 24 horas: se ninguém encerrar, ela fecha sozinha. Depois de encerrada, o link não aceita mais presenças, e quem não marcou presença fica como ausente.
+
+#### RN007 - Presença manual
+O monitor, o professor ou o coordenador pode marcar ou retirar a presença de qualquer aluno da sala, com a chamada aberta ou encerrada. A presença manual fica identificada como manual, com quem a registrou e quando.
+
+#### RN008 - Cancelamento
+Uma chamada aberta por engano pode ser cancelada. Ela deixa de aceitar presenças, não aparece no painel e não conta no percentual de ninguém.
+
+#### RN009 - Painel do aluno
+Cada aluno vê, para cada sala, o percentual de presença, calculado como presenças ÷ chamadas encerradas × 100, e a lista de chamadas com data, título e se esteve presente ou ausente.
+
+#### RN010 - Aluno que entrou depois
+Só contam para o aluno as chamadas de dias a partir da data em que ele entrou na sala (F05). Chamadas anteriores não aparecem como ausência.
+
+#### RN011 - Visão do monitor e do professor
+O monitor e o professor veem cada chamada com a lista de presentes e ausentes e um resumo com o percentual de presença de cada aluno na sala. Não existe frequência mínima nem alerta por percentual baixo.
+
+#### RN012 - Sala arquivada e aluno que saiu
+Numa sala arquivada (F05), nenhuma chamada nova pode ser aberta, e as chamadas abertas são encerradas automaticamente. O aluno que saiu da sala continua vendo, no painel, o histórico de presença dela.
 
 ---
 
